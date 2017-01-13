@@ -25,20 +25,33 @@ def create_vk_session(login, password):
     vk_session = vk_api.VkApi(login, password)
     try:
         vk_session.authorization()
-    except vk_api.AuthorizationError as error_msg:
+    except (vk_api.AuthorizationError, vk_api.ApiError) as error_msg:
         print(error_msg)
+        return 'TryAgain'
 
     return SessionVk(vk_session=vk_session)
 
 
 def get_vk_my_id(session):
-    return int(session.tools.vk.token['user_id'])
+    try:
+        return int(session.tools.vk.token['user_id'])
+    except KeyError:
+        return -1
 
 
-def get_name_by_id(id):
+def get_vk_id_by_url(session, url):
+    try:
+        user_id_or_alias = url.split('/')[-1]
+        user = session.tools.get_all('users.get', 100, {'user_ids': user_id_or_alias, 'name_case': 'Nom'})
+        id = user['items'][0]['uid']
+    except KeyError:
+        return -1
+
+
+def get_name_by_id(user_id):
     resp = requests.get('https://api.vk.com/api.php?oauth=1',
                         params={'method': 'users.get',
-                                'user_id': id
+                                'user_id': user_id
                                 })
 
     try:
@@ -70,11 +83,6 @@ def divide_messages_by_months(messages, session):
         month_messages.append(Message(text=vk_msg['body'], sender_name=names[vk_msg['from_id']], date=message_date))
 
     yield {'messages': month_messages, 'month': month}
-
-
-def get_vk_messages(session):
-    messages = get_full_history_with(session)
-    return messages
 
 
 def vk_send_file_to(session, doc_id, recipient_id):

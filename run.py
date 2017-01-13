@@ -1,4 +1,5 @@
-from dialogue.scripts.vk_get_messages import create_vk_session, get_vk_messages, upload_file
+from dialogue.scripts.interface import log_in
+from dialogue.scripts.vk_get_messages import get_full_history_with, upload_file
 from dialogue.scripts.book import generate_book
 
 
@@ -7,10 +8,9 @@ def main():
     password = ''
     with_id = 2025894
 
-    session = create_vk_session(login=login, password=password)
-    session.other_id = with_id
+    session = log_in()
 
-    messages = get_vk_messages(session)
+    messages = get_full_history_with(session)
     generate_book(messages, session)
     upload_file(session)
 
